@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA DFS Lineup Optimizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .status-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .status-card h3 {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-card p {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #212529;
+        }
+
+        .status-card.active {
+            border-left: 4px solid #28a745;
+        }
+
+        .status-card.inactive {
+            border-left: 4px solid #dc3545;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            padding: 0 20px;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 1em;
+            color: #6c757d;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: #212529;
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h2 {
+            color: #212529;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-icon {
+            width: 30px;
+            height: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.1);
+        }
+
+        .card-header {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #212529;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #f8f9fa;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+            color: #495057;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge-primary {
+            background: #cce5ff;
+            color: #004085;
+        }
+
+        .core-stack {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+
+        .core-stack.selected {
+            border-color: #28a745;
+            background: #f0fff4;
+        }
+
+        .core-stack-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .core-stack-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #212529;
+        }
+
+        .core-stack-stats {
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .core-player {
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-name {
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .player-position {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .player-salary {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .player-projection {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .lineup-card {
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+
+        .lineup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .lineup-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .lineup-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .stat-box {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #212529;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .file-upload {
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+
+        .file-upload.dragover {
+            border-color: #667eea;
+            background: #e7f3ff;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            cursor: pointer;
+            margin-bottom: 0;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🏀 NBA DFS Lineup Optimizer</h1>
+            <p>Build winning lineups with core stack strategy</p>
+        </div>
+
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-card" id="status-slate">
+                <h3>Slate Loaded</h3>
+                <p id="slate-status">❌ None</p>
+            </div>
+            <div class="status-card" id="status-pool">
+                <h3>Player Pool</h3>
+                <p id="pool-status">❌ None</p>
+            </div>
+            <div class="status-card" id="status-cores">
+                <h3>Core Stacks</h3>
+                <p id="cores-status">❌ None</p>
+            </div>
+            <div class="status-card" id="status-lineups">
+                <h3>Lineups</h3>
+                <p id="lineups-status">❌ None</p>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('upload')">📤 Upload Slate</button>
+            <button class="tab" onclick="switchTab('filter')">🔍 Filter Pool</button>
+            <button class="tab" onclick="switchTab('cores')">⭐ Core Stacks</button>
+            <button class="tab" onclick="switchTab('lineups')">⚡ Generate Lineups</button>
+            <button class="tab" onclick="switchTab('view')">👀 View Lineups</button>
+            <button class="tab" onclick="switchTab('export')">💾 Export</button>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- Upload Tab -->
+            <div id="tab-upload" class="tab-content active">
+                <div class="section">
+                    <h2><span class="section-icon">📤</span> Upload Slate File</h2>
+                    
+                    <div class="alert alert-info">
+                        <strong>📁 Instructions:</strong> Upload your DraftKings or FanDuel projection CSV file. 
+                        The optimizer will automatically detect column names and load player data.
+                    </div>
+
+                    <div class="file-upload" id="file-drop-zone">
+                        <div style="font-size: 3em; margin-bottom: 15px;">📁</div>
+                        <h3>Drag & Drop CSV File Here</h3>
+                        <p style="margin: 15px 0;">or</p>
+                        <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display: none;">
+                        <button class="btn btn-primary" onclick="document.getElementById('file-input').click()">
+                            Browse Files
+                        </button>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label>Platform</label>
+                        <select id="platform-select" class="form-control">
+                            <option value="FD">FanDuel</option>
+                            <option value="DK">DraftKings</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-success btn-lg" onclick="loadSlate()" style="width: 100%; margin-top: 20px;">
+                        Load Slate →
+                    </button>
+                </div>
+
+                <div id="slate-preview" style="display: none;">
+                    <div class="section">
+                        <h2><span class="section-icon">✅</span> Slate Loaded Successfully</h2>
+                        <div class="card">
+                            <div class="card-header">
+                                <span>Preview</span>
+                                <span id="total-players-preview" class="badge badge-primary">0 players</span>
+                            </div>
+                            <div id="preview-content"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Tab -->
+            <div id="tab-filter" class="tab-content">
+                <div class="section">
+                    <h2><span class="section-icon">🔍</span> Filter Player Pool</h2>
+                    
+                    <div class="alert alert-info">
+                        Set criteria to filter playable players. Only players meeting ALL criteria will be included in your player pool.
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Minimum Projected Minutes</label>
+                            <input type="number" id="min-minutes" class="form-control" value="22" min="0">
+                            <small>Default: 22 (starters only)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Minimum Value Score</label>
+                            <input type="number" id="min-value" class="form-control" value="2.0" step="0.1" min="0">
+                            <small>Default: 2.0 (pts per $1K)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Maximum Salary (Optional)</label>
+                            <input type="number" id="max-salary" class="form-control" placeholder="Leave blank for no limit">
+                            <small>Example: 10000 for players under $10K</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Position Filter (Optional)</label>
+                            <select id="position-filter" class="form-control" multiple size="5">
+                                <option value="">All Positions</option>
+                                <option value="PG">Point Guard (PG)</option>
+                                <option value="SG">Shooting Guard (SG)</option>
+                                <option value="SF">Small Forward (SF)</option>
+                                <option value="PF">Power Forward (PF)</option>
+                                <option value="C">Center (C)</option>
+                            </select>
+                            <small>Hold Ctrl/Cmd to select multiple</small>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-lg" onclick="filterPlayerPool()" style="width: 100%; margin-top: 20px;">
+                        Apply Filters →
+                    </button>
+                </div>
+
+                <div id="pool-results" style="display: none;">
+                    <div class="section">
+                        <h2><span class="section-icon">✅</span> Filtered Player Pool</h2>
+                        <div class="card">
+                            <div class="card-header">
+                                <span>Top Value Plays</span>
+                                <span id="pool-size" class="badge badge-success">0 players</span>
+                            </div>
+                            <div class="table-container">
+                                <table id="player-pool-table">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Name</th>
+                                            <th>Position</th>
+                                            <th>Team</th>
+                                            <th>Salary</th>
+                                            <th>Projection</th>
+                                            <th>Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="player-pool-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Core Stacks Tab -->
+            <div id="tab-cores" class="tab-content">
+                <div class="section">
+                    <h2><span class="section-icon">⭐</span> Generate Core Stacks</h2>
+                    
+                    <div class="alert alert-info">
+                        <strong>Core Stack Concept:</strong> Each core is 4 players that play TOGETHER in the same lineup as a foundation. 
+                        You'll then add 5 value plays around each core to complete 9-player lineups.
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Number of Core Stacks</label>
+                            <input type="number" id="num-cores" class="form-control" value="4" min="1" max="10">
+                            <small>How many different core combinations</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Players Per Core</label>
+                            <input type="number" id="players-per-core" class="form-control" value="4" min="2" max="6">
+                            <small>Players that play together (recommended: 4)</small>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-lg" onclick="generateCores()" style="width: 100%; margin-top: 20px;">
+                        Generate Core Stacks →
+                    </button>
+                </div>
+
+                <div id="cores-display" style="display: none;">
+                    <div class="section">
+                        <h2><span class="section-icon">📋</span> Your Core Stacks</h2>
+                        <div id="cores-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generate Lineups Tab -->
+            <div id="tab-lineups" class="tab-content">
+                <div class="section">
+                    <h2><span class="section-icon">⚡</span> Generate Lineups</h2>
+                    
+                    <div class="alert alert-warning">
+                        <strong>⚠️ Note:</strong> This web interface simulates lineup generation. 
+                        For full Python-powered optimization, use the command-line version: <code>python interactive_optimizer.py</code>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Lineups Per Core Stack</label>
+                        <input type="number" id="lineups-per-core" class="form-control" value="5" min="1" max="20">
+                        <small>Each core stack will generate this many unique lineups</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Platform</label>
+                        <select id="lineup-platform" class="form-control">
+                            <option value="FD">FanDuel (9 players, $60K cap)</option>
+                            <option value="DK">DraftKings (8 players, $50K cap)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-success btn-lg" onclick="generateLineups()" style="width: 100%; margin-top: 20px;">
+                        Generate Lineups →
+                    </button>
+
+                    <div class="loading" id="lineup-loading">
+                        <div class="spinner"></div>
+                        <p>Generating lineups...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- View Lineups Tab -->
+            <div id="tab-view" class="tab-content">
+                <div class="section">
+                    <h2><span class="section-icon">👀</span> Generated Lineups</h2>
+                    <div id="lineups-container">
+                        <div class="alert alert-info">
+                            Generate lineups first to view them here.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Export Tab -->
+            <div id="tab-export" class="tab-content">
+                <div class="section">
+                    <h2><span class="section-icon">💾</span> Export Options</h2>
+                    
+                    <div class="alert alert-warning">
+                        <strong>🔧 Full Export Capability:</strong> 
+                        The Python version (<code>python interactive_optimizer.py</code>) provides complete CSV export 
+                        in DraftKings and FanDuel upload formats. This web interface shows a preview.
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">Export Summary</div>
+                        <div style="padding: 20px;">
+                            <p><strong>Total Lineups:</strong> <span id="export-count">0</span></p>
+                            <p><strong>Average Projection:</strong> <span id="export-avg-proj">0</span> pts</p>
+                            <p><strong>Average Ownership:</strong> <span id="export-avg-own">0</span>%</p>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="downloadLineups()">
+                        📥 Download Lineups (JSON)
+                    </button>
+                    
+                    <button class="btn btn-secondary" onclick="copyToClipboard()">
+                        📋 Copy to Clipboard
+                    </button>
+
+                    <div class="alert alert-info" style="margin-top: 20px;">
+                        <strong>💡 Tip:</strong> For production use, run the Python optimizer to get proper CSV files ready for DK/FD upload.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let appState = {
+            slateData: null,
+            playerPool: null,
+            coreStacks: [],
+            generatedLineups: [],
+            platform: 'FD'
+        };
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // File upload handling
+        const dropZone = document.getElementById('file-drop-zone');
+        const fileInput = document.getElementById('file-input');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                loadSlate();
+            }
+        });
+
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) {
+                loadSlate();
+            }
+        });
+
+        // Load slate
+        function loadSlate() {
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file first');
+                return;
+            }
+
+            const platform = document.getElementById('platform-select').value;
+            
+            // In a real implementation, this would parse CSV and send to Python backend
+            // For demo, we'll simulate with sample data
+            
+            alert('🎉 Slate loaded successfully!\n\nIn production, this connects to Python backend.\nFor now, using sample data...');
+            
+            // Simulate slate data
+            appState.slateData = generateSamplePlayers(280);
+            appState.platform = platform;
+            
+            // Update UI
+            updateStatus('slate', `✅ ${file.name}`);
+            document.getElementById('slate-status').parentElement.classList.add('active');
+            document.getElementById('slate-status').parentElement.classList.remove('inactive');
+            
+            // Show preview
+            document.getElementById('slate-preview').style.display = 'block';
+            document.getElementById('total-players-preview').textContent = `${appState.slateData.length} players`;
+            
+            // Auto-switch to filter tab
+            setTimeout(() => switchTab('filter'), 500);
+        }
+
+        // Filter player pool
+        function filterPlayerPool() {
+            if (!appState.slateData) {
+                alert('Please load a slate first');
+                return;
+            }
+
+            const minMinutes = parseFloat(document.getElementById('min-minutes').value) || 0;
+            const minValue = parseFloat(document.getElementById('min-value').value) || 0;
+            const maxSalary = parseInt(document.getElementById('max-salary').value) || 99999;
+
+            // Filter players
+            appState.playerPool = appState.slateData.filter(p => 
+                p.minutes >= minMinutes && 
+                p.value >= minValue && 
+                p.salary <= maxSalary
+            );
+
+            // Sort by value
+            appState.playerPool.sort((a, b) => b.value - a.value);
+
+            // Update UI
+            updateStatus('pool', `✅ ${appState.playerPool.length} players`);
+            document.getElementById('pool-status').parentElement.classList.add('active');
+            
+            // Display table
+            displayPlayerPool();
+            
+            document.getElementById('pool-results').style.display = 'block';
+            
+            // Auto-switch to cores tab
+            setTimeout(() => switchTab('cores'), 500);
+        }
+
+        // Display player pool table
+        function displayPlayerPool() {
+            const tbody = document.getElementById('player-pool-body');
+            tbody.innerHTML = '';
+
+            const top20 = appState.playerPool.slice(0, 20);
+            
+            top20.forEach((player, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><strong>${player.name}</strong></td>
+                    <td><span class="badge badge-primary">${player.position}</span></td>
+                    <td>${player.team}</td>
+                    <td>$${player.salary.toLocaleString()}</td>
+                    <td>${player.projection.toFixed(1)}</td>
+                    <td><strong>${player.value.toFixed(2)}</strong></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('pool-size').textContent = `${appState.playerPool.length} players`;
+        }
+
+        // Generate core stacks
+        function generateCores() {
+            if (!appState.playerPool || appState.playerPool.length === 0) {
+                alert('Please filter player pool first');
+                return;
+            }
+
+            const numCores = parseInt(document.getElementById('num-cores').value);
+            const playersPerCore = parseInt(document.getElementById('players-per-core').value);
+
+            // Generate cores (simple algorithm for demo)
+            appState.coreStacks = [];
+            const usedPlayers = new Set();
+
+            for (let i = 0; i < numCores; i++) {
+                const core = [];
+                
+                for (let j = 0; j < playersPerCore; j++) {
+                    // Find next best unused player
+                    const player = appState.playerPool.find(p => !usedPlayers.has(p.name));
+                    if (player) {
+                        core.push(player);
+                        usedPlayers.add(player.name);
+                    }
+                }
+                
+                if (core.length === playersPerCore) {
+                    appState.coreStacks.push(core);
+                }
+            }
+
+            // Update UI
+            updateStatus('cores', `✅ ${appState.coreStacks.length} stacks`);
+            document.getElementById('cores-status').parentElement.classList.add('active');
+            
+            displayCores();
+            document.getElementById('cores-display').style.display = 'block';
+            
+            // Auto-switch to lineups tab
+            setTimeout(() => switchTab('lineups'), 500);
+        }
+
+        // Display core stacks
+        function displayCores() {
+            const container = document.getElementById('cores-container');
+            container.innerHTML = '';
+
+            appState.coreStacks.forEach((core, index) => {
+                const totalSalary = core.reduce((sum, p) => sum + p.salary, 0);
+                const totalProjection = core.reduce((sum, p) => sum + p.projection, 0);
+
+                const coreDiv = document.createElement('div');
+                coreDiv.className = 'core-stack selected';
+                coreDiv.innerHTML = `
+                    <div class="core-stack-header">
+                        <div class="core-stack-title">Core Stack ${index + 1}</div>
+                        <div class="core-stack-stats">
+                            $${totalSalary.toLocaleString()} | ${totalProjection.toFixed(1)} pts
+                        </div>
+                    </div>
+                    ${core.map(player => `
+                        <div class="core-player">
+                            <div>
+                                <span class="player-name">${player.name}</span>
+                                <span class="player-position">${player.position}</span>
+                            </div>
+                            <div>
+                                <span class="player-salary">$${player.salary.toLocaleString()}</span>
+                                <span class="player-projection">${player.projection.toFixed(1)} pts</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+
+                container.appendChild(coreDiv);
+            });
+        }
+
+        // Generate lineups
+        function generateLineups() {
+            if (appState.coreStacks.length === 0) {
+                alert('Please generate core stacks first');
+                return;
+            }
+
+            const lineupsPerCore = parseInt(document.getElementById('lineups-per-core').value);
+            
+            document.getElementById('lineup-loading').classList.add('active');
+            
+            setTimeout(() => {
+                // Simulate lineup generation
+                appState.generatedLineups = [];
+                
+                appState.coreStacks.forEach((core, coreIndex) => {
+                    for (let i = 0; i < lineupsPerCore; i++) {
+                        const lineup = {
+                            coreSet: coreIndex + 1,
+                            players: [...core],
+                            salary: core.reduce((sum, p) => sum + p.salary, 0),
+                            projection: core.reduce((sum, p) => sum + p.projection, 0),
+                            ownership: 15.0
+                        };
+                        
+                        // Add 5 more players (simulated)
+                        const remaining = appState.playerPool.filter(p => 
+                            !core.some(cp => cp.name === p.name)
+                        ).slice(0, 5);
+                        
+                        lineup.players.push(...remaining);
+                        lineup.salary += remaining.reduce((sum, p) => sum + p.salary, 0);
+                        lineup.projection += remaining.reduce((sum, p) => sum + p.projection, 0);
+                        
+                        appState.generatedLineups.push(lineup);
+                    }
+                });
+                
+                document.getElementById('lineup-loading').classList.remove('active');
+                
+                // Update UI
+                updateStatus('lineups', `✅ ${appState.generatedLineups.length} lineups`);
+                document.getElementById('lineups-status').parentElement.classList.add('active');
+                
+                displayLineups();
+                
+                // Auto-switch to view tab
+                setTimeout(() => switchTab('view'), 500);
+            }, 1500);
+        }
+
+        // Display lineups
+        function displayLineups() {
+            const container = document.getElementById('lineups-container');
+            container.innerHTML = '';
+
+            appState.generatedLineups.forEach((lineup, index) => {
+                const lineupDiv = document.createElement('div');
+                lineupDiv.className = 'lineup-card';
+                lineupDiv.innerHTML = `
+                    <div class="lineup-header">
+                        <div class="lineup-number">Lineup #${index + 1}</div>
+                        <div><span class="badge badge-primary">Core Stack ${lineup.coreSet}</span></div>
+                    </div>
+                    <div class="lineup-stats">
+                        <div class="stat-box">
+                            <div class="stat-label">Salary</div>
+                            <div class="stat-value">$${lineup.salary.toLocaleString()}</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Projection</div>
+                            <div class="stat-value">${lineup.projection.toFixed(1)} pts</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Ownership</div>
+                            <div class="stat-value">${lineup.ownership.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                    <div>
+                        ${lineup.players.map((p, i) => `
+                            <div class="core-player" style="${i < 4 ? 'background: #e7f3ff; border-left: 3px solid #667eea;' : ''}">
+                                <div>
+                                    <span class="player-name">${p.name}</span>
+                                    <span class="player-position">${p.position}</span>
+                                    ${i < 4 ? '<span class="badge badge-primary" style="margin-left: 10px;">CORE</span>' : ''}
+                                </div>
+                                <div>
+                                    <span class="player-salary">$${p.salary.toLocaleString()}</span>
+                                    <span class="player-projection">${p.projection.toFixed(1)} pts</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(lineupDiv);
+            });
+
+            // Update export stats
+            const avgProj = appState.generatedLineups.reduce((sum, l) => sum + l.projection, 0) / appState.generatedLineups.length;
+            const avgOwn = appState.generatedLineups.reduce((sum, l) => sum + l.ownership, 0) / appState.generatedLineups.length;
+            
+            document.getElementById('export-count').textContent = appState.generatedLineups.length;
+            document.getElementById('export-avg-proj').textContent = avgProj.toFixed(1);
+            document.getElementById('export-avg-own').textContent = avgOwn.toFixed(1);
+        }
+
+        // Download lineups
+        function downloadLineups() {
+            if (appState.generatedLineups.length === 0) {
+                alert('No lineups to export');
+                return;
+            }
+
+            const data = JSON.stringify(appState.generatedLineups, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `lineups_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Copy to clipboard
+        function copyToClipboard() {
+            if (appState.generatedLineups.length === 0) {
+                alert('No lineups to copy');
+                return;
+            }
+
+            const text = appState.generatedLineups.map((lineup, i) => 
+                `Lineup ${i + 1}: ${lineup.players.map(p => p.name).join(', ')}`
+            ).join('\n\n');
+
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ Lineups copied to clipboard!');
+            });
+        }
+
+        // Update status display
+        function updateStatus(type, text) {
+            document.getElementById(`${type}-status`).textContent = text;
+        }
+
+        // Generate sample players
+        function generateSamplePlayers(count) {
+            const names = ['LeBron James', 'Stephen Curry', 'Kevin Durant', 'Giannis Antetokounmpo', 
+                          'Nikola Jokic', 'Luka Doncic', 'Joel Embiid', 'Jayson Tatum', 
+                          'Damian Lillard', 'Anthony Davis', 'James Harden', 'Kawhi Leonard',
+                          'Donovan Mitchell', 'Devin Booker', 'Trae Young', 'Jimmy Butler'];
+            
+            const positions = ['PG', 'SG', 'SF', 'PF', 'C', 'PG/SG', 'SF/PF', 'PF/C'];
+            const teams = ['LAL', 'GSW', 'PHX', 'MIL', 'DEN', 'DAL', 'PHI', 'BOS', 
+                          'MIA', 'POR', 'LAC', 'TOR', 'UTA', 'ATL'];
+
+            const players = [];
+            
+            for (let i = 0; i < count; i++) {
+                const salary = Math.floor(Math.random() * 8000) + 3000;
+                const projection = salary / 180 + Math.random() * 10;
+                
+                players.push({
+                    name: i < names.length ? names[i] : `Player ${i + 1}`,
+                    position: positions[Math.floor(Math.random() * positions.length)],
+                    team: teams[Math.floor(Math.random() * teams.length)],
+                    salary: salary,
+                    projection: projection,
+                    minutes: Math.floor(Math.random() * 20) + 20,
+                    value: projection / (salary / 1000),
+                    ownership: Math.random() * 30
+                });
+            }
+            
+            return players;
+        }
+    </script>
+</body>
+</html>
