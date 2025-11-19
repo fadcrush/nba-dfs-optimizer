@@ -1,0 +1,43 @@
+# DFS Optimizer - Git Ignore
+
+# Data files (keep structure, ignore data)
+*.csv
+*.xlsx
+*.xls
+
+# Except templates
+!*template*.csv
+!*template*.xlsx
+
+# Logs
+Game_Logs/**/*.log
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# OS
+Thumbs.db
+desktop.ini
+
+# Generated files
+Generated_Lineups/**/*.csv
+Analysis_Output/**/*.csv
+Analysis_Output/**/*.json
+
+# Keep folder structure
+!.gitkeep
